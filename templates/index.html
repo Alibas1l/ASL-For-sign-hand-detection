@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Language Detection App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-hands"></i>
+                    <h1>Sign Language Detector</h1>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Ready</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="camera-section">
+                <div class="camera-container">
+                    <video id="video" autoplay muted playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    <div class="camera-overlay">
+                        <div class="detection-box" id="detectionBox"></div>
+                        <div class="instructions">
+                            <p>Position your hand in the center of the frame</p>
+                            <p>Make sure your hand is well-lit and visible</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="startBtn" class="btn btn-primary">
+                        <i class="fas fa-play"></i>
+                        Start Detection
+                    </button>
+                    <button id="stopBtn" class="btn btn-secondary" disabled>
+                        <i class="fas fa-stop"></i>
+                        Stop Detection
+                    </button>
+                    <button id="clearBtn" class="btn btn-outline">
+                        <i class="fas fa-trash"></i>
+                        Clear Text
+                    </button>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="prediction-card">
+                    <h3>Current Prediction</h3>
+                    <div class="prediction-display">
+                        <div class="letter" id="currentLetter">-</div>
+                        <div class="confidence" id="confidence">0%</div>
+                    </div>
+                    <div class="prediction-details">
+                        <div class="detail-item">
+                            <span class="label">Letter:</span>
+                            <span class="value" id="predictedLetter">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Confidence:</span>
+                            <span class="value" id="confidenceValue">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sentence-card">
+                    <h3>Formed Sentence</h3>
+                    <div class="sentence-display" id="sentenceDisplay">
+                        <p id="sentenceText">Start signing to see your message appear here...</p>
+                    </div>
+                    <div class="sentence-controls">
+                        <button id="speakBtn" class="btn btn-success" disabled>
+                            <i class="fas fa-volume-up"></i>
+                            Speak
+                        </button>
+                        <button id="copyBtn" class="btn btn-outline">
+                            <i class="fas fa-copy"></i>
+                            Copy
+                        </button>
+                    </div>
+                </div>
+
+                <div class="recent-letters">
+                    <h3>Recent Letters</h3>
+                    <div class="letters-list" id="lettersList">
+                        <p class="no-letters">No letters detected yet</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 Sign Language Detection App. Built with TensorFlow & Flask.</p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Help</a>
+                    <a href="#" class="footer-link">About</a>
+                    <a href="#" class="footer-link">Settings</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading model...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
