@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Language Detection - Real Time Recognition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .camera-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .camera-container {
+            position: relative;
+            display: inline-block;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        #videoElement {
+            width: 400px;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .detection-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .prediction-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .prediction-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .current-prediction {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .prediction-letter {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #56ab2f 0%, #a8e6cf 100%);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .confidence-text {
+            text-align: center;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .top-predictions {
+            margin-top: 15px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .alphabet-grid {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .alphabet-grid h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .alphabet-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .alphabet-item {
+            aspect-ratio: 1;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #495057;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .alphabet-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .alphabet-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .text-output {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .text-output h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .output-area {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 150px;
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #495057;
+            resize: vertical;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+        }
+
+        .text-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-bar {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+
+        .status-dot.active {
+            background: #2ecc71;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .model-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+
+        .model-info.loaded {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .alphabet-container {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .alphabet-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            #videoElement {
+                width: 100%;
+                max-width: 350px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤟 Sign Language Detection</h1>
+            <p>Real-time American Sign Language Recognition System</p>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div id="modelInfo" class="model-info">
+                    <strong>⚠️ Model Status:</strong> <span id="modelStatus">No model loaded. Please load your trained model to start detection.</span>
+                </div>
+
+                <div class="camera-section">
+                    <h3>📹 Live Camera Feed</h3>
+                    <div class="camera-container">
+                        <video id="videoElement" autoplay muted playsinline></video>
+                        <div class="detection-overlay" id="detectionOverlay">
+                            <div>Prediction: <span id="overlayPrediction">-</span></div>
+                            <div>Confidence: <span id="overlayConfidence">0%</span></div>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <button class="btn btn-primary" id="startBtn">Start Camera</button>
+                        <button class="btn btn-danger" id="stopBtn" disabled>Stop Camera</button>
+                        <button class="btn btn-success" id="captureBtn" disabled>Capture & Predict</button>
+                        <input type="file" id="modelInput" accept=".h5,.keras" style="display: none;">
+                        <button class="btn btn-warning" id="loadModelBtn">Load Model</button>
+                    </div>
+                </div>
+
+                <div class="prediction-section">
+                    <h3>🎯 Current Prediction</h3>
+                    <div class="current-prediction">
+                        <div class="prediction-letter" id="currentLetter">-</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                        </div>
+                        <div class="confidence-text" id="confidenceText">0% Confidence</div>
+                    </div>
+                    <div class="top-predictions">
+                        <h4>Top 3 Predictions:</h4>
+                        <div id="topPredictions">
+                            <div class="prediction-item">
+                                <span>-</span>
+                                <span>0%</span>
+                            </div>
+                            <div class="prediction-item">
+                                <span>-</span>
+                                <span>0%</span>
+                            </div>
+                            <div class="prediction-item">
+                                <span>-</span>
+                                <span>0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="alphabet-grid">
+                    <h3>🔤 ASL Alphabet</h3>
+                    <div class="alphabet-container" id="alphabetGrid">
+                        <!-- Alphabet items will be generated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="text-output">
+                    <h3>📝 Detected Text</h3>
+                    <textarea class="output-area" id="outputText" placeholder="Detected letters will appear here..."></textarea>
+                    <div class="text-controls">
+                        <button class="btn btn-primary" id="addLetterBtn" disabled>Add Letter</button>
+                        <button class="btn btn-warning" id="addSpaceBtn">Add Space</button>
+                        <button class="btn btn-danger" id="clearAllBtn">Clear All</button>
+                        <button class="btn btn-success" id="saveTextBtn">Save to File</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Camera Inactive</span>
+            </div>
+            <div>
+                <span>FPS: <span id="fpsCounter">0</span></span>
+                <span style="margin-left: 20px;">Predictions: <span id="predictionCounter">0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SignLanguageApp {
+            constructor() {
+                this.video = document.getElementById('videoElement');
+                this.canvas = document.createElement('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isCapturing = false;
+                this.modelLoaded = false;
+                this.predictionCount = 0;
+                this.lastFrameTime = 0;
+                this.fps = 0;
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.createAlphabetGrid();
+                this.checkModelStatus();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    startBtn: document.getElementById('startBtn'),
+                    stopBtn: document.getElementById('stopBtn'),
+                    captureBtn: document.getElementById('captureBtn'),
+                    loadModelBtn: document.getElementById('loadModelBtn'),
+                    modelInput: document.getElementById('modelInput'),
+                    currentLetter: document.getElementById('currentLetter'),
+                    confidenceFill: document.getElementById('confidenceFill'),
+                    confidenceText: document.getElementById('confidenceText'),
+                    topPredictions: document.getElementById('topPredictions'),
+                    outputText: document.getElementById('outputText'),
+                    addLetterBtn: document.getElementById('addLetterBtn'),
+                    addSpaceBtn: document.getElementById('addSpaceBtn'),
+                    clearAllBtn: document.getElementById('clearAllBtn'),
+                    saveTextBtn: document.getElementById('saveTextBtn'),
+                    statusDot: document.getElementById('statusDot'),
+                    statusText: document.getElementById('statusText'),
+                    fpsCounter: document.getElementById('fpsCounter'),
+                    predictionCounter: document.getElementById('predictionCounter'),
+                    modelInfo: document.getElementById('modelInfo'),
+                    modelStatus: document.getElementById('modelStatus'),
+                    overlayPrediction: document.getElementById('overlayPrediction'),
+                    overlayConfidence: document.getElementById('overlayConfidence')
+                };
+            }
+
+            setupEventListeners() {
+                this.elements.startBtn.addEventListener('click', () => this.startCamera());
+                this.elements.stopBtn.addEventListener('click', () => this.stopCamera());
+                this.elements.captureBtn.addEventListener('click', () => this.captureAndPredict());
+                this.elements.loadModelBtn.addEventListener('click', () => this.elements.modelInput.click());
+                this.elements.modelInput.addEventListener('change', (e) => this.handleModelUpload(e));
+                this.elements.addLetterBtn.addEventListener('click', () => this.addCurrentLetter());
+                this.elements.addSpaceBtn.addEventListener('click', () => this.addSpace());
+                this.elements.clearAllBtn.addEventListener('click', () => this.clearText());
+                this.elements.saveTextBtn.addEventListener('click', () => this.saveText());
+            }
+
+            createAlphabetGrid() {
+                const alphabetContainer = document.getElementById('alphabetGrid');
+                const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+                               'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 
+                               'DEL', 'SPACE'];
+                
+                letters.forEach(letter => {
+                    const item = document.createElement('div');
+                    item.className = 'alphabet-item';
+                    item.textContent = letter;
+                    item.dataset.letter = letter;
+                    alphabetContainer.appendChild(item);
+                });
+            }
+
+            async checkModelStatus() {
+                try {
+                    const response = await fetch('/get_model_info');
+                    const data = await response.json();
+                    
+                    if (data.loaded) {
+                        this.modelLoaded = true;
+                        this.elements.modelInfo.className = 'model-info loaded';
+                        this.elements.modelStatus.textContent = '✅ Model loaded successfully! Ready for detection.';
+                        this.elements.captureBtn.disabled = false;
+                        this.elements.addLetterBtn.disabled = false;
+                    } else {
+                        this.modelLoaded = false;
+                        this.elements.modelInfo.className = 'model-info';
+                        this.elements.modelStatus.textContent = '⚠️ No model loaded. Please load your trained model to start detection.';
+                    }
+                } catch (error) {
+                    console.error('Error checking model status:', error);
+                }
+            }
+
+            async startCamera() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            width: 640, 
+                            height: 480,
+                            facingMode: 'user'
+                        } 
+                    });
+                    
+                    this.video.srcObject = stream;
+                    this.isCapturing = true;
+                    
+                    this.elements.startBtn.disabled = true;
+                    this.elements.stopBtn.disabled = false;
+                    if (this.modelLoaded) {
+                        this.elements.captureBtn.disabled = false;
+                    }
+                    
+                    this.elements.statusDot.classList.add('active');
+                    this.elements.statusText.textContent = 'Camera Active';
+                    
+                    this.startFPSCounter();
+                    
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    alert('Error accessing camera. Please make sure you have granted camera permissions.');
+                }
+            }
+
+            stopCamera() {
+                if (this.video.srcObject) {
+                    this.video.srcObject.getTracks().forEach(track => track.stop());
+                    this.video.srcObject = null;
+                }
+                
+                this.isCapturing = false;
+                this.elements.startBtn.disabled = false;
+                this.elements.stopBtn.disabled = true;
+                this.elements.captureBtn.disabled = true;
+                
+                this.elements.statusDot.classList.remove('active');
+                this.elements.statusText.textContent = 'Camera Inactive';
+            }
+
+            startFPSCounter() {
+                const updateFPS = () => {
+                    if (!this.isCapturing) return;
+                    
+                    const now = performance.now();
+                    if (this.lastFrameTime) {
+                        this.fps = Math.round(1000 / (now - this.lastFrameTime));
+                        this.elements.fpsCounter.textContent = this.fps;
+                    }
+                    this.lastFrameTime = now;
+                    
+                    requestAnimationFrame(updateFPS);
+                };
+                updateFPS();
+            }
+
+            async captureAndPredict() {
+                if (!this.isCapturing || !this.modelLoaded) return;
+                
+                // Set canvas size to match video
+                this.canvas.width = this.video.videoWidth;
+                this.canvas.height = this.video.videoHeight;
+                
+                // Draw current video frame to canvas
+                this.ctx.drawImage(this.video, 0, 0);
+                
+                // Convert canvas to base64 image
+                const imageData = this.canvas.toDataURL('image/jpeg', 0.8);
+                
+                try {
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ image: imageData })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        console.error('Prediction error:', result.error);
+                        return;
+                    }
+                    
+                    this.updatePredictionDisplay(result);
+                    this.predictionCount++;
+                    this.elements.predictionCounter.textContent = this.predictionCount;
+                    
+                } catch (error) {
+                    console.error('Error making prediction:', error);
+                }
+            }
+
+            updatePredictionDisplay(result) {
+                // Update current prediction
+                this.elements.currentLetter.textContent = result.predicted_class;
+                this.elements.overlayPrediction.textContent = result.predicted_class;
+                
+                const confidence = Math.round(result.confidence * 100);
+                this.elements.confidenceFill.style.width = confidence + '%';
+                this.elements.confidenceText.textContent = confidence + '% Confidence';
+                this.elements.overlayConfidence.textContent = confidence + '%';
+                
+                // Update top predictions
+                const topPreds = this.elements.topPredictions;
+                topPreds.innerHTML = '';
+                
+                result.top_predictions.forEach(pred => {
+                    const item = document.createElement('div');
+                    item.className = 'prediction-item';
+                    item.innerHTML = `
+                        <span>${pred.class}</span>
+                        <span>${Math.round(pred.confidence * 100)}%</span>
+                    `;
+                    topPreds.appendChild(item);
+                });
+                
+                // Highlight current letter in alphabet grid
+                document.querySelectorAll('.alphabet-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.letter === result.predicted_class) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                // Store current prediction for adding to text
+                this.currentPrediction = result.predicted_class;
+            }
+
+            addCurrentLetter() {
+                if (this.currentPrediction && this.currentPrediction !== 'nothing') {
+                    const currentText = this.elements.outputText.value;
+                    
+                    if (this.currentPrediction === 'del' && currentText.length > 0) {
+                        // Delete last character
+                        this.elements.outputText.value = currentText.slice(0, -1);
+                    } else if (this.currentPrediction === 'space') {
+                        // Add space
+                        this.elements.outputText.value = currentText + ' ';
+                    } else if (this.currentPrediction.length === 1) {
+                        // Add letter
+                        this.elements.outputText.value = currentText + this.currentPrediction;
+                    }
+                }
+            }
+
+            addSpace() {
+                this.elements.outputText.value += ' ';
+            }
+
+            clearText() {
+                this.elements.outputText.value = '';
+            }
+
+            async saveText() {
+                const text = this.elements.outputText.value.trim();
+                
+                if (!text) {
+                    alert('No text to save!');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/save_text', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ text: text })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        alert('Error saving text: ' + result.error);
+                    } else {
+                        alert('Text saved successfully as: ' + result.filename);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error saving text:', error);
+                    alert('Error saving text. Please try again.');
+                }
+            }
+
+            async handleModelUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                // For now, we'll just show an alert since we can't actually upload files to the server
+                // In a real implementation, you'd upload the file to the server
+                alert('Model upload feature requires server-side implementation. Please place your model file in the server directory and restart the application.');
+            }
+        }
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SignLanguageApp();
+        });
+    </script>
+</body>
+</html>
