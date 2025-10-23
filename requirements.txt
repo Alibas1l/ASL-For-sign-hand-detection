@@ -1,0 +1,6 @@
+# Desktop app dependencies
+PySide6>=6.9.0
+opencv-python>=4.10.0
+numpy>=1.26
+# Optional for ONNX model plugin (not available on py3.13 yet)
+onnxruntime; python_version < '3.13'
